@@ -1,0 +1,971 @@
+{
+	"info": {
+		"_postman_id": "12345678-1234-1234-1234-123456789012",
+		"name": "Product Manager - Full Stack API",
+		"description": "Coleção completa de testes para a API do Product Manager desenvolvida em Classic ASP.\n\n## Sobre o Projeto\nSistema completo de gerenciamento de produtos com:\n- Backend: Classic ASP (VBScript)\n- Banco de Dados: SQL Server\n- Frontend: HTML + Bootstrap + JavaScript\n- Servidor: IIS\n\n## Como Usar\n1. Configure as variáveis de ambiente\n2. Execute os testes de autenticação primeiro\n3. Use os tokens obtidos para testar as outras APIs\n4. Verifique os logs de auditoria no banco de dados\n\n## Variáveis Necessárias\n- `base_url`: URL base da aplicação (ex: http://localhost)\n- `user_token`: Token de autenticação do usuário\n- `api_token`: Token para API externa\n\nDesenvolvido por: Full Stack Developer\nData: 2025",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "🔐 Autenticação",
+			"item": [
+				{
+					"name": "Registrar Usuário",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 or 409\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([201, 409]);",
+									"});",
+									"",
+									"pm.test(\"Response has success or error field\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.any.keys('success', 'error');",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    pm.test(\"Registration successful\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData.success).to.be.true;",
+									"        pm.expect(jsonData.data).to.have.property('username');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"teste_api\",\n    \"password\": \"senha123\",\n    \"email\": \"teste.api@email.com\",\n    \"fullName\": \"Usuário de Teste API\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/asp/register.asp",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"asp",
+								"register.asp"
+							]
+						},
+						"description": "Registra um novo usuário no sistema.\n\n**Campos obrigatórios:**\n- username (3-50 caracteres, apenas letras, números e underscore)\n- password (6-100 caracteres)\n- email (formato válido)\n- fullName (opcional, máximo 100 caracteres)\n\n**Respostas:**\n- 201: Usuário criado com sucesso\n- 409: Username ou email já existe\n- 400: Dados inválidos"
+					}
+				},
+				{
+					"name": "Login de Usuário",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has success field\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('success');",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Login successful and has token\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData.success).to.be.true;",
+									"        pm.expect(jsonData.data).to.have.property('token');",
+									"        pm.expect(jsonData.data).to.have.property('userId');",
+									"        pm.expect(jsonData.data).to.have.property('username');",
+									"        ",
+									"        // Salvar token para uso em outras requisições",
+									"        pm.environment.set('user_token', jsonData.data.token);",
+									"        pm.environment.set('user_id', jsonData.data.userId);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/asp/login.asp",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"asp",
+								"login.asp"
+							]
+						},
+						"description": "Autentica um usuário no sistema.\n\n**Credenciais de teste:**\n- admin / admin123 (Administrador)\n- joao.silva / senha123 (Usuário regular)\n- maria.oliveira / senha456 (Usuário regular)\n\n**Resposta de sucesso:**\n- Token de sessão\n- Dados do usuário\n- Tempo de login\n\n**Erros:**\n- 401: Credenciais inválidas\n- 400: Dados obrigatórios ausentes"
+					}
+				}
+			],
+			"description": "Endpoints para registro e autenticação de usuários."
+		},
+		{
+			"name": "📦 Gerenciamento de Produtos",
+			"item": [
+				{
+					"name": "Listar Produtos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has success and data fields\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('success');",
+									"    pm.expect(jsonData).to.have.property('data');",
+									"    pm.expect(jsonData).to.have.property('pagination');",
+									"});",
+									"",
+									"pm.test(\"Data is an array\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"Pagination has required fields\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    const pagination = jsonData.pagination;",
+									"    pm.expect(pagination).to.have.property('currentPage');",
+									"    pm.expect(pagination).to.have.property('totalPages');",
+									"    pm.expect(pagination).to.have.property('totalRecords');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/asp/productCrud.asp?action=list&token={{user_token}}&page=1&size=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"asp",
+								"productCrud.asp"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "list"
+								},
+								{
+									"key": "token",
+									"value": "{{user_token}}"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "category",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista produtos com paginação e filtros opcionais.\n\n**Parâmetros:**\n- page: Página atual (padrão: 1)\n- size: Itens por página (padrão: 10, máximo: 100)\n- category: Filtrar por categoria\n- search: Buscar por nome ou descrição\n- sort_by: Campo para ordenação (Name, Price, CreatedAt, etc.)\n- sort_order: ASC ou DESC\n\n**Resposta:**\n- Array de produtos\n- Informações de paginação\n- Total de registros"
+					}
+				},
+				{
+					"name": "Obter Detalhes do Produto",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 404\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Product details are complete\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData.success).to.be.true;",
+									"        pm.expect(jsonData.data).to.have.property('productId');",
+									"        pm.expect(jsonData.data).to.have.property('name');",
+									"        pm.expect(jsonData.data).to.have.property('price');",
+									"        pm.expect(jsonData.data).to.have.property('stock');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/asp/productCrud.asp?action=details&id=1&token={{user_token}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"asp",
+								"productCrud.asp"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "details"
+								},
+								{
+									"key": "id",
+									"value": "1"
+								},
+								{
+									"key": "token",
+									"value": "{{user_token}}"
+								}
+							]
+						},
+						"description": "Obtém detalhes completos de um produto específico.\n\n**Parâmetros:**\n- id: ID do produto (obrigatório)\n\n**Resposta:**\n- Dados completos do produto\n- Informações do criador\n- Datas de criação e atualização"
+					}
+				},
+				{
+					"name": "Criar Produto",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Product created successfully\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.have.property('productId');",
+									"    pm.expect(jsonData.data).to.have.property('name');",
+									"    ",
+									"    // Salvar ID do produto criado para outros testes",
+									"    pm.environment.set('created_product_id', jsonData.data.productId);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Produto Teste API\",\n    \"description\": \"Produto criado via API para testes automatizados\",\n    \"price\": 99.99,\n    \"category\": \"Teste\",\n    \"stock\": 50,\n    \"token\": \"{{user_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/asp/productCrud.asp?action=create",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"asp",
+								"productCrud.asp"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "create"
+								}
+							]
+						},
+						"description": "Cria um novo produto no sistema.\n\n**Campos obrigatórios:**\n- name: Nome do produto (1-100 caracteres)\n- price: Preço (número >= 0)\n\n**Campos opcionais:**\n- description: Descrição (máximo 500 caracteres)\n- category: Categoria do produto\n- stock: Quantidade em estoque (padrão: 0)\n- sku: Código do produto (gerado automaticamente se não fornecido)\n\n**Resposta:**\n- ID do produto criado\n- Dados do produto\n- Data de criação"
+					}
+				},
+				{
+					"name": "Atualizar Produto",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Product updated successfully\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.have.property('productId');",
+									"    pm.expect(jsonData.data).to.have.property('updatedAt');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Produto Teste API - Atualizado\",\n    \"description\": \"Produto atualizado via API para testes automatizados\",\n    \"price\": 149.99,\n    \"category\": \"Teste Atualizado\",\n    \"stock\": 75,\n    \"token\": \"{{user_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/asp/productCrud.asp?action=update&id={{created_product_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"asp",
+								"productCrud.asp"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "update"
+								},
+								{
+									"key": "id",
+									"value": "{{created_product_id}}"
+								}
+							]
+						},
+						"description": "Atualiza um produto existente.\n\n**Parâmetros:**\n- id: ID do produto a ser atualizado\n\n**Campos atualizáveis:**\n- name: Nome do produto\n- description: Descrição\n- price: Preço\n- category: Categoria\n- stock: Estoque\n- sku: Código (opcional)\n\n**Resposta:**\n- Dados atualizados do produto\n- Data de atualização"
+					}
+				},
+				{
+					"name": "Excluir Produto",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Product deleted successfully\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.have.property('productId');",
+									"    pm.expect(jsonData.data).to.have.property('deletedAt');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/asp/productCrud.asp?action=delete&id={{created_product_id}}&token={{user_token}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"asp",
+								"productCrud.asp"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "delete"
+								},
+								{
+									"key": "id",
+									"value": "{{created_product_id}}"
+								},
+								{
+									"key": "token",
+									"value": "{{user_token}}"
+								}
+							]
+						},
+						"description": "Exclui um produto (soft delete).\n\n**Parâmetros:**\n- id: ID do produto a ser excluído\n\n**Nota:**\n- O produto não é removido fisicamente do banco\n- É marcado como inativo (IsActive = 0)\n- Triggers de auditoria registram a operação\n\n**Resposta:**\n- ID do produto excluído\n- Data de exclusão"
+					}
+				}
+			],
+			"description": "Endpoints para gerenciamento completo de produtos (CRUD)."
+		},
+		{
+			"name": "🌐 API Externa",
+			"item": [
+				{
+					"name": "Gerar Token de Acesso",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"// Nota: Este endpoint seria implementado para gerar tokens de API externa",
+									"// Por enquanto, use um token válido do banco de dados"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tokenName\": \"API Test Token\",\n    \"permissions\": \"{\\\"read\\\": true, \\\"write\\\": true}\",\n    \"expirationHours\": 24\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/asp/generateToken.asp",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"asp",
+								"generateToken.asp"
+							]
+						},
+						"description": "Gera um token de acesso para API externa.\n\n**Nota:** Este endpoint seria implementado para permitir a geração de tokens via API. Por enquanto, use os tokens disponíveis no banco de dados ou execute a stored procedure sp_GenerateAccessToken.\n\n**Tokens de teste disponíveis:**\nConsulte a tabela AccessTokens no banco de dados após executar o script seed_data.sql."
+					}
+				},
+				{
+					"name": "Listar Produtos (API Externa)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has success and data fields\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('success');",
+									"    pm.expect(jsonData).to.have.property('data');",
+									"    pm.expect(jsonData).to.have.property('meta');",
+									"    pm.expect(jsonData).to.have.property('timestamp');",
+									"});",
+									"",
+									"pm.test(\"Data is an array\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"Meta has pagination info\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    const meta = jsonData.meta;",
+									"    pm.expect(meta).to.have.property('current_page');",
+									"    pm.expect(meta).to.have.property('total');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{api_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/asp/externalApi.asp?action=products&page=1&limit=20&sort_by=CreatedAt&sort_order=DESC",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"asp",
+								"externalApi.asp"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "products"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "category",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "sort_by",
+									"value": "CreatedAt"
+								},
+								{
+									"key": "sort_order",
+									"value": "DESC"
+								}
+							]
+						},
+						"description": "Lista produtos via API externa com autenticação por token.\n\n**Autenticação:**\n- Header: Authorization: Bearer {token}\n- Ou parâmetro: access_token={token}\n\n**Parâmetros:**\n- page: Página atual (padrão: 1)\n- limit: Itens por página (padrão: 20, máximo: 50)\n- category: Filtrar por categoria\n- search: Buscar por nome ou descrição\n- sort_by: Campo para ordenação\n- sort_order: ASC ou DESC\n\n**Resposta:**\n- Array de produtos com formato otimizado\n- Metadados de paginação\n- Timestamp da requisição"
+					}
+				},
+				{
+					"name": "Obter Categorias (API Externa)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has categories\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"});",
+									"",
+									"if (pm.response.json().data.length > 0) {",
+									"    pm.test(\"Categories have required fields\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        const firstCategory = jsonData.data[0];",
+									"        pm.expect(firstCategory).to.have.property('name');",
+									"        pm.expect(firstCategory).to.have.property('product_count');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{api_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/asp/externalApi.asp?action=categories",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"asp",
+								"externalApi.asp"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "categories"
+								}
+							]
+						},
+						"description": "Obtém lista de categorias disponíveis com contagem de produtos.\n\n**Resposta:**\n- Array de categorias\n- Contagem de produtos por categoria\n- Timestamp da requisição"
+					}
+				},
+				{
+					"name": "Obter Estatísticas (API Externa)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has statistics\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.have.property('total_products');",
+									"    pm.expect(jsonData.data).to.have.property('total_categories');",
+									"    pm.expect(jsonData.data).to.have.property('average_price');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{api_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/asp/externalApi.asp?action=stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"asp",
+								"externalApi.asp"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "stats"
+								}
+							]
+						},
+						"description": "Obtém estatísticas gerais do sistema.\n\n**Resposta:**\n- Total de produtos\n- Total de categorias\n- Preço médio, mínimo e máximo\n- Total de estoque\n- Timestamp da requisição"
+					}
+				},
+				{
+					"name": "Criar Produto (API Externa)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Product created via external API\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.have.property('id');",
+									"    pm.expect(jsonData.data).to.have.property('name');",
+									"    pm.expect(jsonData).to.have.property('timestamp');",
+									"    ",
+									"    // Salvar ID do produto criado",
+									"    pm.environment.set('external_product_id', jsonData.data.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{api_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Produto API Externa\",\n    \"description\": \"Produto criado via API externa para integração\",\n    \"price\": 199.99,\n    \"category\": \"API Externa\",\n    \"stock\": 100\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/asp/externalApi.asp?action=product",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"asp",
+								"externalApi.asp"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "product"
+								}
+							]
+						},
+						"description": "Cria um produto via API externa.\n\n**Autenticação:**\n- Token de acesso obrigatório\n\n**Campos obrigatórios:**\n- name: Nome do produto (máximo 100 caracteres)\n- price: Preço (número >= 0)\n\n**Campos opcionais:**\n- description: Descrição (máximo 500 caracteres)\n- category: Categoria (padrão: \"Geral\")\n- stock: Estoque (padrão: 0)\n\n**Resposta:**\n- Dados do produto criado\n- Timestamp da operação"
+					}
+				}
+			],
+			"description": "Endpoints da API externa para integração com sistemas terceiros. Requer autenticação via token de acesso."
+		},
+		{
+			"name": "🧪 Testes de Validação",
+			"item": [
+				{
+					"name": "Teste de Autenticação Inválida",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test(\"Error message is present\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('error');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/asp/productCrud.asp?action=list&token=invalid_token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"asp",
+								"productCrud.asp"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "list"
+								},
+								{
+									"key": "token",
+									"value": "invalid_token"
+								}
+							]
+						},
+						"description": "Testa o comportamento da API com token inválido.\n\n**Resultado esperado:**\n- Status 401 Unauthorized\n- Mensagem de erro apropriada"
+					}
+				},
+				{
+					"name": "Teste de Dados Inválidos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Validation error is present\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('error');",
+									"    pm.expect(jsonData).to.have.property('code');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"\",\n    \"price\": -10,\n    \"stock\": -5,\n    \"token\": \"{{user_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/asp/productCrud.asp?action=create",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"asp",
+								"productCrud.asp"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "create"
+								}
+							]
+						},
+						"description": "Testa validação de dados inválidos.\n\n**Dados inválidos:**\n- Nome vazio\n- Preço negativo\n- Estoque negativo\n\n**Resultado esperado:**\n- Status 400 Bad Request\n- Mensagem de validação específica"
+					}
+				},
+				{
+					"name": "Teste de Produto Inexistente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test(\"Not found error is present\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('error');",
+									"    pm.expect(jsonData.code).to.equal('PRODUCT_NOT_FOUND');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/asp/productCrud.asp?action=details&id=99999&token={{user_token}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"asp",
+								"productCrud.asp"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "details"
+								},
+								{
+									"key": "id",
+									"value": "99999"
+								},
+								{
+									"key": "token",
+									"value": "{{user_token}}"
+								}
+							]
+						},
+						"description": "Testa busca por produto inexistente.\n\n**Resultado esperado:**\n- Status 404 Not Found\n- Código de erro PRODUCT_NOT_FOUND"
+					}
+				}
+			],
+			"description": "Testes de validação e casos de erro para garantir robustez da API."
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Script executado antes de cada requisição",
+					"console.log('Executando requisição para: ' + pm.request.url);",
+					"",
+					"// Verificar se as variáveis necessárias estão definidas",
+					"if (!pm.environment.get('base_url')) {",
+					"    console.warn('Variável base_url não definida. Configure nas variáveis de ambiente.');",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Script executado após cada requisição",
+					"console.log('Resposta recebida com status: ' + pm.response.code);",
+					"",
+					"// Teste global para verificar tempo de resposta",
+					"pm.test('Response time is less than 5000ms', function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});",
+					"",
+					"// Teste global para verificar Content-Type JSON quando aplicável",
+					"if (pm.response.headers.get('Content-Type') && pm.response.headers.get('Content-Type').includes('application/json')) {",
+					"    pm.test('Response is valid JSON', function () {",
+					"        pm.response.to.be.json;",
+					"    });",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost",
+			"type": "string",
+			"description": "URL base da aplicação (ex: http://localhost ou http://seu-servidor)"
+		},
+		{
+			"key": "user_token",
+			"value": "",
+			"type": "string",
+			"description": "Token de autenticação do usuário (obtido via login)"
+		},
+		{
+			"key": "api_token",
+			"value": "",
+			"type": "string",
+			"description": "Token para API externa (consulte tabela AccessTokens no banco)"
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"type": "string",
+			"description": "ID do usuário logado"
+		},
+		{
+			"key": "created_product_id",
+			"value": "",
+			"type": "string",
+			"description": "ID do produto criado durante os testes"
+		},
+		{
+			"key": "external_product_id",
+			"value": "",
+			"type": "string",
+			"description": "ID do produto criado via API externa"
+		}
+	]
+}
